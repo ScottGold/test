@@ -222,7 +222,7 @@ func WaitXMRGetPeer(rpcPort int) {
 	}
 }
 
-func XMRGenBlock(rpcPort int, amount_of_blocks int64, wallet_address string, miner_sec_key string, xmrBlockCount *int64) string {
+func XMRGenBlock(rpcPort int, amount_of_blocks int64, wallet_address string, miner_sec_key string, xmrBlockCount *int64) bool {
 	log.Println(rpcPort, "generating", amount_of_blocks, "block, blockcount", *xmrBlockCount+amount_of_blocks)
 
 	prev_block := ""
@@ -231,8 +231,11 @@ func XMRGenBlock(rpcPort int, amount_of_blocks int64, wallet_address string, min
 		amount_of_blocks, wallet_address, prev_block, starting_nonce, miner_sec_key)
 
 	ret := XMRRpc(rpcPort, "generateblocks", params)
-	*xmrBlockCount = *xmrBlockCount + amount_of_blocks
-	return ret
+	match, _ := regexp.MatchString(`"status": "OK"`, ret)
+	if match { //TODO: may some of them success
+		*xmrBlockCount = *xmrBlockCount + amount_of_blocks
+	}
+	return match
 }
 
 func XMRBid(rpcPort int, amount string, block_height int64, pub_view_key string) {
@@ -251,7 +254,7 @@ DEBUG
 TRACE - lower level A level automatically includes higher level. By default,
 */
 func SetLogCategories(rpcPort int) {
-	params := fmt.Sprintf(`{"categories": "*:%s,net:ERROR,net.throttle:ERROR,net.p2p:FATAL,blockchain.db.lmdb:ERROR"}`, defaultLogType)
+	params := fmt.Sprintf(`{"categories": "*:%s,net:ERROR,net.throttle:ERROR,net.p2p:FATAL,blockchain.db.lmdb:ERROR,blockchain:WARNING"}`, defaultLogType)
 	XMRUrlCall(rpcPort, "set_log_categories", params)
 }
 

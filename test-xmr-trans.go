@@ -134,7 +134,7 @@ func main() {
 	commonParams = append(commonParams, "--fixed-difficulty=1")
 	commonParams = append(commonParams, "--non-interactive")
 	//commonParams = append(commonParams, "--rpc-login=user:pwd") // Digest Authentication, i don't know how to write
-	commonParams = append(commonParams, "--log-level=0")
+	commonParams = append(commonParams, "--log-level=4")
 	commonParams = append(commonParams, "--allow-local-ip")
 	commonParams = append(commonParams, "--btcbidstart=200")
 	commonParams = append(commonParams, "--popforkheight=1000")
@@ -174,13 +174,24 @@ func main() {
 	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir)
 	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort2, walletrpcport2, w2dir)
 
-	fmt.Println("create wallet1")
-	xmrtools.XMRRpc(walletrpcport1, "create_wallet", `{"filename":"ww1","password":"","language":"English"}`)
-	waddr1, vk1, sec1 := xmrtools.GetMinerAddress(walletrpcport1)
-	fmt.Println("create wallet2")
-	xmrtools.XMRRpc(walletrpcport2, "create_wallet", `{"filename":"ww1","password":"","language":"English"}`)
-	waddr2, vk2, sec2 := xmrtools.GetMinerAddress(walletrpcport2)
+	addrs1, vks1, secs1 := []string{}, []string{}, []string{}
+	addrs2, vks2, secs2 := []string{}, []string{}, []string{}
 
+	fmt.Println("create wallets")
+	for i := 0; i < 11; i++ {
+		params := fmt.Sprintf(`{"filename":"ww%d","password":"","language":"English"}`, i)
+		xmrtools.XMRRpc(walletrpcport1, "create_wallet", params)
+		waddr1, vk1, sec1 := xmrtools.GetMinerAddress(walletrpcport1)
+		addrs1 = append(addrs1, waddr1)
+		vks1 = append(vks1, vk1)
+		secs1 = append(secs1, sec1)
+
+		xmrtools.XMRRpc(walletrpcport2, "create_wallet", params)
+		waddr2, vk2, sec2 := xmrtools.GetMinerAddress(walletrpcport2)
+		addrs2 = append(addrs2, waddr2)
+		vks2 = append(vks2, vk2)
+		secs2 = append(secs2, sec2)
+	}
 	//---------------------------
 	go func() {
 		var btccmd *exec.Cmd
@@ -199,10 +210,10 @@ func main() {
 
 	var xmrBlockCount int64 = 1
 	for xmrBlockCount < 424+1 { //before bid
-		xmrtools.XMRGenBlock(rpcPort1, 106, waddr1, sec1, &xmrBlockCount)
+		xmrtools.XMRGenBlock(rpcPort1, 106, addrs1[0], secs1[0], &xmrBlockCount)
 		xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
 
-		xmrtools.XMRGenBlock(rpcPort2, 106, waddr2, sec2, &xmrBlockCount)
+		xmrtools.XMRGenBlock(rpcPort2, 106, addrs2[0], secs2[0], &xmrBlockCount)
 		xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
 	}
 
@@ -218,29 +229,61 @@ func main() {
 	var lastsendblockheight int64 = 0
 	switchop := true
 	mocktime := time.Now().Unix()
-	xmrmocktime := mocktime
+	//xmrmocktime := mocktime
+	ivks1, ivks2 := 0, 0
 	for {
-		xmrtools.XMRBid(rpcPort1, "1", 1, vk1)
-		xmrtools.XMRBid(rpcPort2, "1", 1, vk2)
+		//for _, vk := range vks1 {
+		xmrtools.XMRBid(rpcPort1, "1", 1, vks1[ivks1])
+		//}
+		//for _, vk := range vks2 {
+		xmrtools.XMRBid(rpcPort2, "1", 1, vks2[ivks2])
+		//}
+		ivks1 = (ivks1 + 1) % len(vks1)
+		ivks2 = (ivks2 + 1) % len(vks2)
 
 		btctools.SetMockTime(btc_cli, btcdatadir, mocktime)
 		btctools.CliCommand(btc_cli, btcdatadir, "btc gen 1 blocks", "generatetoaddress", "1", string(btcAddress))
 
 		for i := 0; i < 5; i++ {
 			mocktime = mocktime + 120
-			xmrmocktime = xmrmocktime + 120 + 2
-			xmrtools.SetMockTime(rpcPort1, xmrmocktime)
-			xmrtools.SetMockTime(rpcPort2, xmrmocktime)
-			if switchop {
-				xmrtools.XMRGenBlock(rpcPort1, 1, waddr1, sec1, &xmrBlockCount)
+			//xmrmocktime = xmrmocktime + 120 + 2
+			xmrtools.SetMockTime(rpcPort1, mocktime)
+			xmrtools.SetMockTime(rpcPort2, mocktime)
+			/*
+				if switchop {
+					xmrtools.XMRGenBlock(rpcPort1, 1, addrs1[0], secs1[0], &xmrBlockCount)
+					xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+				} else {
+					xmrtools.XMRGenBlock(rpcPort2, 1, addrs2[0], secs2[0], &xmrBlockCount)
+					xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+				}
+				switchop = !switchop */
+
+			genok := false
+			const gennum = int64(1)
+		GENLOOP:
+			for g := 0; g < 2; g++ {
+				addrs, secs := []string{}, []string{}
+				if switchop {
+					addrs, secs = addrs1, secs1
+				} else {
+					addrs, secs = addrs2, secs2
+				}
+				switchop = !switchop
+				for i := 0; i < len(addrs); i++ {
+					genok = xmrtools.XMRGenBlock(rpcPort1, gennum, addrs[i], secs[i], &xmrBlockCount)
+					if genok {
+						fmt.Println("genok by group ", switchop, " miner ", i)
+						break GENLOOP
+					}
+				}
+			}
+			if genok {
 				xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
 			} else {
-				xmrtools.XMRGenBlock(rpcPort2, 1, waddr2, sec2, &xmrBlockCount)
-				xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+				fmt.Println("gen fail.")
 			}
 		}
-
-		switchop = !switchop
 
 		if xmrBlockCount-lastsendblockheight > 4 || xmrBlockCount == 1001 {
 			//log.Println(xmrtools.SendTo(walletrpcport1, recipients))
