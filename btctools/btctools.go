@@ -51,7 +51,7 @@ func PrintAllChainBlockCount(bch_cli string, bchdatadir1 string, bchdatadir2 str
 
 func CliCommand(cli string, datadir string, errLog string, rpc string, params ...string) (string, error) {
 	var arg []string
-	arg = append(arg, datadir, rpc)
+	arg = append(arg, "-rpcclienttimeout=0", datadir, rpc)
 	arg = append(arg, params...)
 	cmd := exec.Command(cli, arg...)
 	output, err := cmd.CombinedOutput()
@@ -60,6 +60,12 @@ func CliCommand(cli string, datadir string, errLog string, rpc string, params ..
 		panic("CliCommand fail")
 	}
 	return string(output), err
+}
+
+func GenerateBlocks(cli, datadir, genCount, mineAddress string) {
+	defer RecoveFunc()
+	maxtry := "10"
+	CliCommand(cli, datadir, datadir+" gen blocks "+genCount, "generatetoaddress", genCount, mineAddress, maxtry)
 }
 
 func WaitToConnectPeer(bch_cli string, bchdatadir1 string) {
@@ -93,6 +99,13 @@ func WaitToSyncBlock(bch_cli string, bchdatadir1 string, bchdatadir2 string) {
 		time.Sleep(1 * time.Second)
 		fmt.Println("getblockcount:", c1, c2)
 	}
+}
+
+func GetBlockCount(btc_cli string, btcdatadir string) (blockcount int) {
+	strret, _ := CliCommand(btc_cli, btcdatadir, "get blocks count", "getblockcount")
+	strret = strings.Trim(strret, " \r\n")
+	blockcount, _ = strconv.Atoi(strret)
+	return
 }
 
 func RecoveFunc( /*finish chan<- int*/ ) {

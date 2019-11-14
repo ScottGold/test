@@ -12,7 +12,7 @@ import (
 	//"strings"
 	"os"
 
-	"github.com/mytest/xmrtools"
+	"github.com/ScottGold/test/xmrtools"
 )
 
 type peer struct {

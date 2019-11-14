@@ -24,9 +24,9 @@ import (
 	//"io/ioutil"
 	"flag"
 
-	"github.com/mytest/btctools"
-	"github.com/mytest/common"
-	"github.com/mytest/xmrtools"
+	"github.com/ScottGold/test/btctools"
+	"github.com/ScottGold/test/common"
+	"github.com/ScottGold/test/xmrtools"
 )
 
 var (
@@ -138,7 +138,6 @@ func main() {
 	commonParams = append(commonParams, "--allow-local-ip")
 	commonParams = append(commonParams, "--btcbidstart=200")
 	commonParams = append(commonParams, "--popforkheight=1000")
-	commonParams = append(commonParams, "--xmrbidstart=424")
 
 	common.ClearDataDir(dir1)
 	common.ClearDataDir(dir2)
@@ -209,11 +208,11 @@ func main() {
 	btctools.CliCommand(btc_cli, btcdatadir, "generate blocks", "generatetoaddress", "200", string(btcAddress))
 
 	var xmrBlockCount int64 = 1
-	for xmrBlockCount < 424+1 { //before bid
-		xmrtools.XMRGenBlock(rpcPort1, 106, addrs1[0], secs1[0], &xmrBlockCount)
+	for xmrBlockCount < 280+1 { //before bid
+		xmrtools.XMRGenBlock(rpcPort1, 70, addrs1[0], secs1[0], &xmrBlockCount)
 		xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
 
-		xmrtools.XMRGenBlock(rpcPort2, 106, addrs2[0], secs2[0], &xmrBlockCount)
+		xmrtools.XMRGenBlock(rpcPort2, 70, addrs2[0], secs2[0], &xmrBlockCount)
 		xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
 	}
 
@@ -229,7 +228,10 @@ func main() {
 	var lastsendblockheight int64 = 0
 	switchop := true
 	mocktime := time.Now().Unix()
-	//xmrmocktime := mocktime
+	xmrComplianceTime := int64(120)
+	xmrMineTime := int64(30) // a small timespace try to mine as fast as possible
+	btcMineCount := int64(0)
+
 	ivks1, ivks2 := 0, 0
 	for {
 		//for _, vk := range vks1 {
@@ -241,12 +243,24 @@ func main() {
 		ivks1 = (ivks1 + 1) % len(vks1)
 		ivks2 = (ivks2 + 1) % len(vks2)
 
-		btctools.SetMockTime(btc_cli, btcdatadir, mocktime)
-		btctools.CliCommand(btc_cli, btcdatadir, "btc gen 1 blocks", "generatetoaddress", "1", string(btcAddress))
+		if btcMineCount >= 600 {
+			fmt.Println("r", btcMineCount)
+			btcMineCount = 0
+		}
+		if btcMineCount == 0 {
+			btctools.SetMockTime(btc_cli, btcdatadir, mocktime)
+			btctools.CliCommand(btc_cli, btcdatadir, "btc gen 1 blocks", "generatetoaddress", "1", string(btcAddress))
+		}
 
 		for i := 0; i < 5; i++ {
-			mocktime = mocktime + 120
-			//xmrmocktime = xmrmocktime + 120 + 2
+			timespace := xmrComplianceTime
+			if xmrBlockCount >= 1000 {
+				timespace = xmrMineTime
+			}
+
+			mocktime = mocktime + timespace
+			btcMineCount = btcMineCount + timespace
+
 			xmrtools.SetMockTime(rpcPort1, mocktime)
 			xmrtools.SetMockTime(rpcPort2, mocktime)
 			/*

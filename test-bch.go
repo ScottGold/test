@@ -8,12 +8,12 @@ import (
 	"os/exec"
 	"strings"
 
-	//"time"
+	"time"
 
 	//"bufio"
 	//"regexp"
-	"github.com/mytest/btctools"
-	"github.com/mytest/common"
+	"github.com/ScottGold/test/btctools"
+	"github.com/ScottGold/test/common"
 )
 
 func main() {
@@ -77,6 +77,7 @@ func main() {
 	//fmt.Print("Enter to continue: ")
 	//reader.ReadString('\n')
 
+	//first 424
 	btctools.CliCommand(bch_cli, bchdatadir1, "cli1 generate 12 blocks", "generatetoaddress", "12", strBchAddress1)
 	btctools.WaitToSyncBlock(bch_cli, bchdatadir1, bchdatadir2)
 	btctools.CliCommand(bch_cli, bchdatadir2, "cli2 generate 12 blocks", "generatetoaddress", "12", strBchAddress2)
@@ -88,32 +89,53 @@ func main() {
 		btctools.WaitToSyncBlock(bch_cli, bchdatadir1, bchdatadir2)
 	}
 
-	btctools.PrintAllChainBlockCount(bch_cli, bchdatadir1, bchdatadir2, btc_cli, btcdatadir)
-
-	btctools.CliCommand(bch_cli, bchdatadir1, "cli1 bid", "bid", "1", "1")
-
-	btctools.CliCommand(bch_cli, bchdatadir2, "cli2 bid", "bid", "1", "1")
-
-	btctools.CliCommand(btc_cli, btcdatadir, "btc gen 144 blocks", "generatetoaddress", "144", string(btcAddress))
-
-	btctools.CliCommand(bch_cli, bchdatadir1, "cli1 gen 576 blocks", "generatetoaddress", "576", strBchAddress1)
-
-	btctools.WaitToSyncBlock(bch_cli, bchdatadir1, bchdatadir2)
-
-	fmt.Println("BID finish")
+	//bid start
+	mocktime := time.Now().Unix()
+	bchComplianceTime := int64(150)
+	bchMineTime := int64(30)
+	btcMineCount := int64(0)
 
 	btctools.PrintAllChainBlockCount(bch_cli, bchdatadir1, bchdatadir2, btc_cli, btcdatadir)
 
-	//bid mine test
 	for {
-		btctools.CliCommand(bch_cli, bchdatadir1, "cli1 generate 2 blocks", "generatetoaddress", "2", strBchAddress1)
-		btctools.WaitToSyncBlock(bch_cli, bchdatadir1, bchdatadir2)
-		btctools.CliCommand(bch_cli, bchdatadir2, "cli2 generate 2 blocks", "generatetoaddress", "2", strBchAddress2)
-		btctools.WaitToSyncBlock(bch_cli, bchdatadir1, bchdatadir2)
+		btctools.CliCommand(bch_cli, bchdatadir1, "cli1 bid", "bid", "1", "1")
+		btctools.CliCommand(bch_cli, bchdatadir2, "cli2 bid", "bid", "1", "1")
 
-		btctools.CliCommand(btc_cli, btcdatadir, "btc gen 1 blocks", "generatetoaddress", "1", string(btcAddress))
+		if btcMineCount >= 600 {
+			fmt.Println("r", btcMineCount)
+			btcMineCount = 0
+		}
+		if btcMineCount == 0 {
+			btctools.SetMockTime(btc_cli, btcdatadir, mocktime)
+			btctools.CliCommand(btc_cli, btcdatadir, "btc gen 1 blocks", "generatetoaddress", "1", string(btcAddress))
+		}
+		for i := 0; i < 4; i++ {
+			timespace := bchComplianceTime
+			blockcount := btctools.GetBlockCount(bch_cli, bchdatadir1)
+			fmt.Println("blockcount", blockcount)
+			if blockcount >= 1000 {
+				timespace = bchMineTime
+			}
+			mocktime = mocktime + timespace
+			btcMineCount = btcMineCount + timespace
 
-		btctools.PrintAllChainBlockCount(bch_cli, bchdatadir1, bchdatadir2, btc_cli, btcdatadir)
+			btctools.SetMockTime(bch_cli, bchdatadir1, mocktime)
+			btctools.SetMockTime(bch_cli, bchdatadir2, mocktime)
+
+			//genok := false
+
+			/*genok = */
+			btctools.CliCommand(bch_cli, bchdatadir1, "cli1 generate 1 blocks", "generatetoaddress", "1", strBchAddress1)
+			//if !genok {
+			//	genok = btctools.CliCommand(bch_cli, bchdatadir2, "cli1 generate 1 blocks", "generatetoaddress", "1", strBchAddress2)
+			//}
+
+			//if genok {
+			btctools.WaitToSyncBlock(bch_cli, bchdatadir1, bchdatadir2)
+			//} else {
+			//	fmt.Println("gen fail.")
+			//}
+		}
 	}
 
 	btccmd.Wait()
