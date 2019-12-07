@@ -90,8 +90,9 @@ func main() {
 	btc_cli := "c:/dev/bitcoin-0.18/bitcoin-0.18/build_msvc/x64/Debug/bitcoin-cli.exe"
 	btcdatadir := "-datadir=C:/magnachain/btc0.18/btc"
 
-	xmrd := "C:/dev/bitcoin-0.18/monero-v0.14/build/release/bin/monerod.exe"
-	xmrWalletRPC := "C:/dev/bitcoin-0.18/monero-v0.14/build/release/bin/monero-wallet-rpc.exe"
+	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
+	xmrd := xmrbuildbin + "/monerod.exe"
+	xmrWalletRPC := xmrbuildbin + "/monero-wallet-rpc.exe"
 
 	xmrdirroot := "C:/magnachain/btc0.18/xmr/"
 	dir1, dir2 := xmrdirroot+"d1", xmrdirroot+"d2"
@@ -143,21 +144,21 @@ func main() {
 	common.ClearDataDir(dir2)
 	common.ClearDataDir(BTC_dir)
 
-	//---------------------------
+	//启动xmr结点1 ---------------------------
 	addpeer := fmt.Sprintf("--add-peer=%s:%d", localip, p2pPort2)
 	//xmrParam1 = append(xmrParam1, addpeer)
 	xmrParam1 = append(xmrParam1, commonParams...)
 	go xmrtools.StartXMRD(xmrd, xmrParam1...)
 	xmrtools.WaitToXMRLoadFinish(rpcPort1)
 
-	//---------------------------
+	//启动xmr结点2 ---------------------------
 	addpeer = fmt.Sprintf("--add-peer=%s:%d", localip, p2pPort1)
 	xmrParam2 = append(xmrParam2, addpeer)
 	xmrParam2 = append(xmrParam2, commonParams...)
 	go xmrtools.StartXMRD(xmrd, xmrParam2...)
 	xmrtools.WaitToXMRLoadFinish(rpcPort2)
-	//----------------------------
 
+	//改变log的行为 ----------------------------
 	xmrtools.SetLogCategories(rpcPort1)
 	xmrtools.SetLogCategories(rpcPort2)
 
@@ -166,16 +167,18 @@ func main() {
 	xmrtools.WaitXMRGetPeer(rpcPort1)
 	xmrtools.WaitXMRGetPeer(rpcPort2)
 
-	//start wallet
+	//start wallet rpc
 	fmt.Println("start wallet rpc")
 	w1dir, w2dir := xmrdirroot+"w1", xmrdirroot+"w2"
 
-	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir)
-	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort2, walletrpcport2, w2dir)
+	cleardir := true
+	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir, cleardir)
+	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort2, walletrpcport2, w2dir, cleardir)
 
 	addrs1, vks1, secs1 := []string{}, []string{}, []string{}
 	addrs2, vks2, secs2 := []string{}, []string{}, []string{}
 
+	//创建钱包 ---------------------------
 	fmt.Println("create wallets")
 	for i := 0; i < 11; i++ {
 		params := fmt.Sprintf(`{"filename":"ww%d","password":"","language":"English"}`, i)
@@ -191,7 +194,7 @@ func main() {
 		vks2 = append(vks2, vk2)
 		secs2 = append(secs2, sec2)
 	}
-	//---------------------------
+	//启动 BTC ---------------------------
 	go func() {
 		var btccmd *exec.Cmd
 		fmt.Println("start BTC")
@@ -300,7 +303,7 @@ func main() {
 		}
 
 		if xmrBlockCount-lastsendblockheight > 4 || xmrBlockCount == 1001 {
-			//log.Println(xmrtools.SendTo(walletrpcport1, recipients))
+			log.Println(xmrtools.SendTo(walletrpcport1, recipients))
 			lastsendblockheight = xmrBlockCount
 		}
 		//if lastsendblockheight >= 1030 {

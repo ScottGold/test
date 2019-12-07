@@ -53,8 +53,9 @@ func main() {
 	btc_cli := "c:/dev/bitcoin-0.18/bitcoin-0.18/build_msvc/x64/Debug/bitcoin-cli.exe"
 	btcdatadir := "-datadir=C:/magnachain/btc0.18/btc"
 
-	xmrd := "C:/dev/bitcoin-0.18/monero-v0.14/build/release/bin/monerod.exe"
-	xmrWalletRPC := "C:/dev/bitcoin-0.18/monero-v0.14/build/release/bin/monero-wallet-rpc.exe"
+	xmrbuildbin := 'C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin'
+	xmrd := xmrbuildbin + "/monerod.exe"
+	xmrWalletRPC := xmrbuildbin+ "/monero-wallet-rpc.exe"
 
 	xmrdirroot := "C:/magnachain/btc0.18/xmr/"
 	dir1, dir2 := xmrdirroot+"d1", xmrdirroot+"d2"

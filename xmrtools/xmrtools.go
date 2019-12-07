@@ -238,9 +238,9 @@ func XMRGenBlock(rpcPort int, amount_of_blocks int64, wallet_address string, min
 	return match
 }
 
-func XMRBid(rpcPort int, amount string, block_height int64, pub_view_key string) {
+func XMRBid(rpcPort int, amount string, block_height int64, pub_view_key string) string {
 	params := fmt.Sprintf("{\"amount\":\"%s\",\"block_height\":%d,\"pub_view_key\":\"%s\"}", amount, block_height, pub_view_key)
-	XMRUrlCall(rpcPort, "bid", params)
+	return XMRUrlCall(rpcPort, "bid", params)
 }
 
 /*
@@ -273,7 +273,7 @@ func SetBan(rpcPort1, banTime int) {
 	XMRRpc(rpcPort1, "set_bans", localip)
 }
 
-func StartWalletRPC(xmrWalletRPC string, dhostRpcPort, rpcPort int, walletDir string) {
+func StartWalletRPC(xmrWalletRPC string, dhostRpcPort, rpcPort int, walletDir string, clearData bool) {
 	walletParam := []string{}
 	walletParam = append(walletParam, fmt.Sprintf("--daemon-port=%d", dhostRpcPort))
 	walletParam = append(walletParam, fmt.Sprintf("--rpc-bind-port=%d", rpcPort))
@@ -283,7 +283,10 @@ func StartWalletRPC(xmrWalletRPC string, dhostRpcPort, rpcPort int, walletDir st
 	walletParam = append(walletParam, fmt.Sprintf("--log-file=%s/wallet_rpc%d.log", walletDir, rpcPort))
 	walletParam = append(walletParam, "--log-level=4")
 
-	ClearDataDir(walletDir)
+	if clearData {
+		ClearDataDir(walletDir)
+	}
+
 	go StartXMRD(xmrWalletRPC, walletParam...)
 
 	WaitToXMRLoadFinish(rpcPort)

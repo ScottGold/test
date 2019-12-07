@@ -38,12 +38,18 @@ var (
 	rpcport                     int
 	t                           bool
 	CURRENT_TRANSACTION_VERSION int = 1002
+	createwallet                bool
+	generate                    bool
+	bid                         bool
 )
 
 func init() {
 	flag.BoolVar(&h, "h", false, "this help")
 	flag.IntVar(&rpcport, "p", 9401, "monerod rpc port")
 	flag.BoolVar(&t, "t", false, "test")
+	flag.BoolVar(&createwallet, "createwallet", false, "create wallet")
+	flag.BoolVar(&generate, "generate", false, "generate a block")
+	flag.BoolVar(&bid, "bid", false, "bid")
 	flag.Usage = usage
 }
 
@@ -51,7 +57,7 @@ func main() {
 	flag.Parse()
 
 	if t {
-
+		fmt.Println("test")
 		return
 	}
 
@@ -59,6 +65,7 @@ func main() {
 		flag.Usage()
 		return
 	}
+	/* json test
 	fmt.Println("rpcport", rpcport)
 
 	//fmt.Println(XMRRpc(rpcport, "get_block_count", ""))
@@ -98,6 +105,40 @@ func main() {
 	//}
 	fmt.Println("---------------------")
 	fmt.Println(kPeerList, kPeerList.status)
+	*/
+
+	//
+	xmrbuildbin := 'C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin'
+	//xmrd := xmrbuildbin + "/monerod.exe"
+	xmrWalletRPC := xmrbuildbin+ "/monero-wallet-rpc.exe"
+
+	//18080 P2P_DEFAULT_PORT
+	rpcPort1 := 18081 //note rpc port RPC_DEFAULT_PORT
+	walletrpcport1 := 9601
+	w1dir := "E:/monero/wallet-rpc"
+	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir, false)
+
+	var waddr1, vk1, sec1 string
+	if createwallet {
+		log.Println("create wallet1")
+		xmrtools.XMRRpc(walletrpcport1, "create_wallet", `{"filename":"wallet","password":"","language":"English"}`)
+	} else {
+		log.Println("open wallet")
+		xmrtools.XMRRpc(walletrpcport1, "open_wallet", `{"filename":"wallet","password":""}`)
+	}
+
+	//下面两个需要用到minder address
+	waddr1, vk1, sec1 = xmrtools.GetMinerAddress(walletrpcport1)
+	if bid {
+		fmt.Println("bid")
+		amount := "0.0005"
+		blockHeightOfBidAddress := 1 // only one address now, so any value will available
+		xmrtools.XMRBid(rpcPort1, amount, 1, vk1)
+	}
+	if generate {
+		var xmrBlockCount int64 = 0
+		xmrtools.XMRGenBlock(rpcPort1, 1, waddr1, sec1, &xmrBlockCount)
+	}
 }
 
 func usage() {
