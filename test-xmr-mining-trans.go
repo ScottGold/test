@@ -53,9 +53,9 @@ func main() {
 	btc_cli := "c:/dev/bitcoin-0.18/bitcoin-0.18/build_msvc/x64/Debug/bitcoin-cli.exe"
 	btcdatadir := "-datadir=C:/magnachain/btc0.18/btc"
 
-	xmrbuildbin := 'C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin'
+	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
 	xmrd := xmrbuildbin + "/monerod.exe"
-	xmrWalletRPC := xmrbuildbin+ "/monero-wallet-rpc.exe"
+	xmrWalletRPC := xmrbuildbin + "/monero-wallet-rpc.exe"
 
 	xmrdirroot := "C:/magnachain/btc0.18/xmr/"
 	dir1, dir2 := xmrdirroot+"d1", xmrdirroot+"d2"
@@ -127,8 +127,9 @@ func main() {
 	walletrpcport1, walletrpcport2 := 9601, 9602
 	w1dir, w2dir := xmrdirroot+"w1", xmrdirroot+"w2"
 
-	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir)
-	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort2, walletrpcport2, w2dir)
+	cleardatadir := true
+	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir, cleardatadir)
+	xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort2, walletrpcport2, w2dir, cleardatadir)
 
 	fmt.Println("create wallet1")
 	xmrtools.XMRRpc(walletrpcport1, "create_wallet", `{"filename":"ww1","password":"","language":"English"}`)
@@ -170,18 +171,30 @@ func main() {
 
 	log.Println("start one four loop", xmrBlockCount)
 	var lastsendblockheight int64 = 0
+	var genok bool = false
 	for {
 		xmrtools.XMRBid(rpcPort1, "1", 1, vk1)
 		xmrtools.XMRBid(rpcPort2, "1", 1, vk2)
 
-		xmrtools.XMRGenBlock(rpcPort1, 2, waddr1, sec1, &xmrBlockCount)
-		xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+		for gn := 0; gn < 4; {
+			genok = xmrtools.XMRGenBlock(rpcPort1, 1, waddr1, sec1, &xmrBlockCount)
+			if genok {
+				xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+				gn++
+				if gn == 4 { //
+					break
+				}
+			}
+			genok = xmrtools.XMRGenBlock(rpcPort2, 1, waddr2, sec2, &xmrBlockCount)
+			if genok {
+				xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+				gn++
+			}
+		}
 
-		xmrtools.XMRGenBlock(rpcPort2, 2, waddr2, sec2, &xmrBlockCount)
-		xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
 		btctools.CliCommand(btc_cli, btcdatadir, "btc gen 1 blocks", "generatetoaddress", "1", string(btcAddress))
 
-		if xmrBlockCount-lastsendblockheight > 20 {
+		if xmrBlockCount-lastsendblockheight > 5 {
 			log.Println(xmrtools.SendTo(walletrpcport1, recipients))
 			lastsendblockheight = xmrBlockCount
 		}

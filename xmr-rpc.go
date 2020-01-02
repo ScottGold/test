@@ -47,7 +47,7 @@ func init() {
 	flag.BoolVar(&h, "h", false, "this help")
 	flag.IntVar(&rpcport, "p", 9401, "monerod rpc port")
 	flag.BoolVar(&t, "t", false, "test")
-	flag.BoolVar(&createwallet, "createwallet", false, "create wallet")
+	flag.BoolVar(&createwallet, "createwallet", false, "create wallet, other else open the wallet")
 	flag.BoolVar(&generate, "generate", false, "generate a block")
 	flag.BoolVar(&bid, "bid", false, "bid")
 	flag.Usage = usage
@@ -108,9 +108,9 @@ func main() {
 	*/
 
 	//
-	xmrbuildbin := 'C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin'
+	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
 	//xmrd := xmrbuildbin + "/monerod.exe"
-	xmrWalletRPC := xmrbuildbin+ "/monero-wallet-rpc.exe"
+	xmrWalletRPC := xmrbuildbin + "/monero-wallet-rpc.exe"
 
 	//18080 P2P_DEFAULT_PORT
 	rpcPort1 := 18081 //note rpc port RPC_DEFAULT_PORT
@@ -132,8 +132,8 @@ func main() {
 	if bid {
 		fmt.Println("bid")
 		amount := "0.0005"
-		blockHeightOfBidAddress := 1 // only one address now, so any value will available
-		xmrtools.XMRBid(rpcPort1, amount, 1, vk1)
+		blockHeightOfBidAddress := int64(1) // only one address now, so any value will available
+		log.Println(xmrtools.XMRBid(rpcPort1, amount, blockHeightOfBidAddress, vk1))
 	}
 	if generate {
 		var xmrBlockCount int64 = 0

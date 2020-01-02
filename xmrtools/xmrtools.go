@@ -254,7 +254,7 @@ DEBUG
 TRACE - lower level A level automatically includes higher level. By default,
 */
 func SetLogCategories(rpcPort int) {
-	params := fmt.Sprintf(`{"categories": "*:%s,net:ERROR,net.throttle:ERROR,net.p2p:FATAL,blockchain.db.lmdb:ERROR,blockchain:WARNING"}`, defaultLogType)
+	params := fmt.Sprintf(`{"categories": "*:%s,net:ERROR,net.throttle:ERROR,net.p2p:FATAL,blockchain.db.lmdb:ERROR"}`, defaultLogType)
 	XMRUrlCall(rpcPort, "set_log_categories", params)
 }
 

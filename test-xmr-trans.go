@@ -210,6 +210,11 @@ func main() {
 	fmt.Println("BTC generate 200")
 	btctools.CliCommand(btc_cli, btcdatadir, "generate blocks", "generatetoaddress", "200", string(btcAddress))
 
+	//use 0 index wallet as default wallet
+	openwalletp := fmt.Sprintf(`{"filename":"ww%d","password":"","language":"English"}`, 0)
+	xmrtools.XMRRpc(walletrpcport1, "open_wallet", openwalletp)
+	xmrtools.XMRRpc(walletrpcport2, "open_wallet", openwalletp)
+
 	var xmrBlockCount int64 = 1
 	for xmrBlockCount < 280+1 { //before bid
 		xmrtools.XMRGenBlock(rpcPort1, 70, addrs1[0], secs1[0], &xmrBlockCount)
@@ -238,11 +243,14 @@ func main() {
 	ivks1, ivks2 := 0, 0
 	for {
 		//for _, vk := range vks1 {
-		xmrtools.XMRBid(rpcPort1, "1", 1, vks1[ivks1])
+		bitret1 := xmrtools.XMRBid(rpcPort1, "1", 1, vks1[ivks1])
+		fmt.Println(bitret1)
 		//}
 		//for _, vk := range vks2 {
-		xmrtools.XMRBid(rpcPort2, "1", 1, vks2[ivks2])
+		bitret2 := xmrtools.XMRBid(rpcPort2, "1", 1, vks2[ivks2])
+		fmt.Println(bitret2)
 		//}
+
 		ivks1 = (ivks1 + 1) % len(vks1)
 		ivks2 = (ivks2 + 1) % len(vks2)
 
@@ -281,29 +289,34 @@ func main() {
 		GENLOOP:
 			for g := 0; g < 2; g++ {
 				addrs, secs := []string{}, []string{}
+				groupNum := 1
 				if switchop {
 					addrs, secs = addrs1, secs1
 				} else {
 					addrs, secs = addrs2, secs2
+					groupNum = 2
 				}
 				switchop = !switchop
 				for i := 0; i < len(addrs); i++ {
 					genok = xmrtools.XMRGenBlock(rpcPort1, gennum, addrs[i], secs[i], &xmrBlockCount)
 					if genok {
-						fmt.Println("genok by group ", switchop, " miner ", i)
+						xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+						fmt.Println("genok by group ", groupNum, " miner ", i)
 						break GENLOOP
 					}
 				}
 			}
-			if genok {
-				xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
-			} else {
-				fmt.Println("gen fail.")
-			}
+			//if genok {
+			//	xmrtools.WaitXMRSyncBlock(rpcPort1, rpcPort2, xmrBlockCount)
+			//} else {
+			//	fmt.Println("gen fail.")
+			//}
 		}
 
-		if xmrBlockCount-lastsendblockheight > 4 || xmrBlockCount == 1001 {
-			log.Println(xmrtools.SendTo(walletrpcport1, recipients))
+		if xmrBlockCount-lastsendblockheight > 0 || xmrBlockCount == 1001 {
+			for i := int64(0); i < 1+xmrBlockCount%2; i++ {
+				log.Println(xmrtools.SendTo(walletrpcport1, recipients))
+			}
 			lastsendblockheight = xmrBlockCount
 		}
 		//if lastsendblockheight >= 1030 {
