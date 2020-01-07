@@ -27,6 +27,7 @@ import (
 var (
 	//BTC_dir string = "C:/magnachain/btc0.18/btc/regtest"
 	defaultLogType string = "TRACE"
+	LocalHostIP    string = "127.0.0.1"
 )
 
 func GetLocalIp() string {
@@ -45,7 +46,7 @@ func GetLocalIp() string {
 }
 
 func XMRRpc(rpcPort int, method, params string) string {
-	url := fmt.Sprintf("http://127.0.0.1:%d/json_rpc", rpcPort)
+	url := fmt.Sprintf("http://%s:%d/json_rpc", LocalHostIP, rpcPort)
 	var jsonStr []byte
 	if params == "" {
 		jsonStr = []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":"0","method":"%s"}`, method))
@@ -64,7 +65,7 @@ func XMRRpc(rpcPort int, method, params string) string {
 	}
 	defer resp.Body.Close()
 
-	if resp.Status != "200 Ok" {
+	if strings.ToLower(resp.Status) != "200 ok" {
 		fmt.Println("http status", resp.Status)
 		return ""
 	}
@@ -73,7 +74,7 @@ func XMRRpc(rpcPort int, method, params string) string {
 }
 
 func XMRUrlCall(rpcPort int, method, params string) string {
-	url := fmt.Sprintf("http://127.0.0.1:%d/%s", rpcPort, method)
+	url := fmt.Sprintf("http://%s:%d/%s", LocalHostIP, rpcPort, method)
 	reader := strings.NewReader(params)
 	req, err := http.NewRequest("POST", url, reader)
 	req.Header.Set("Content-Type", "application/json")
@@ -86,7 +87,7 @@ func XMRUrlCall(rpcPort int, method, params string) string {
 	}
 	defer resp.Body.Close()
 
-	if resp.Status != "200 Ok" {
+	if strings.ToLower(resp.Status) != "200 ok" {
 		fmt.Println("http status", resp.Status)
 		return ""
 	}
@@ -253,9 +254,11 @@ INFO
 DEBUG
 TRACE - lower level A level automatically includes higher level. By default,
 */
-func SetLogCategories(rpcPort int) {
-	params := fmt.Sprintf(`{"categories": "*:%s,net:ERROR,net.throttle:ERROR,net.p2p:FATAL,blockchain.db.lmdb:ERROR"}`, defaultLogType)
-	XMRUrlCall(rpcPort, "set_log_categories", params)
+func SetLogCategories(rpcPort int, logparams string) {
+	if logparams == "" {
+		logparams = fmt.Sprintf(`{"categories": "*:%s,net:ERROR,net.throttle:ERROR,net.p2p:FATAL,blockchain.db.lmdb:ERROR"}`, defaultLogType)
+	}
+	XMRUrlCall(rpcPort, "set_log_categories", logparams)
 }
 
 func SetBan(rpcPort1, banTime int) {
@@ -328,4 +331,16 @@ func SendTo(rpcPort int, recipient []Recipient) string {
 func SetMockTime(rpcPort int, timestamp int64) string {
 	params := fmt.Sprintf(`{"timestamp":%d}`, timestamp)
 	return XMRRpc(rpcPort, "setmocktime", params)
+}
+
+func WalletStartMining(walletRpcPort int, miner_address string, miner_sec_key string) string {
+	threads_count := 1
+	//do_background_mining := true
+	params := fmt.Sprintf(`{"miner_address":"%s", "threads_count":%d, "do_background_mining":true, "ignore_battery":true, "miner_sec_key":"%s"}`,
+		miner_address,
+		threads_count,
+		miner_sec_key)
+
+	log.Println(params)
+	return XMRRpc(walletRpcPort, "start_mining", params)
 }

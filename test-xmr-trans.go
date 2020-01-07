@@ -90,7 +90,8 @@ func main() {
 	btc_cli := "c:/dev/bitcoin-0.18/bitcoin-0.18/build_msvc/x64/Debug/bitcoin-cli.exe"
 	btcdatadir := "-datadir=C:/magnachain/btc0.18/btc"
 
-	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
+	//xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
+	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15-no-new-pull/build/release/bin"
 	xmrd := xmrbuildbin + "/monerod.exe"
 	xmrWalletRPC := xmrbuildbin + "/monero-wallet-rpc.exe"
 
@@ -159,8 +160,8 @@ func main() {
 	xmrtools.WaitToXMRLoadFinish(rpcPort2)
 
 	//改变log的行为 ----------------------------
-	xmrtools.SetLogCategories(rpcPort1)
-	xmrtools.SetLogCategories(rpcPort2)
+	xmrtools.SetLogCategories(rpcPort1, "")
+	xmrtools.SetLogCategories(rpcPort2, "")
 
 	//---------------------------
 	time.Sleep(0 * time.Second)
