@@ -40,8 +40,8 @@ func main() {
 	btc_cli := "c:/dev/bitcoin-0.18/bitcoin-0.18/build_msvc/x64/Debug/bitcoin-cli.exe"
 	btcdatadir := "-datadir=C:/magnachain/btc0.18/btc"
 
-	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
-	xmrd := xmrbuildbin + "/monerod.exe"
+	xmrbuildbin := "c:/dev/bitcoin-0.18/poporodev/poporo/build/MINGW64_NT-10.0-17763/master/release/bin"
+	xmrd := xmrbuildbin + "/poporod.exe"
 
 	dir1, dir2 := "C:/magnachain/btc0.18/xmr/d1", "C:/magnachain/btc0.18/xmr/d2"
 	p2pPort1, p2pPort2 := 8401, 8402

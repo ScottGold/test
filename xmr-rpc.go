@@ -11,6 +11,7 @@ import (
 
 	//"strings"
 	"os"
+	"time"
 
 	"github.com/ScottGold/test/xmrtools"
 )
@@ -39,21 +40,22 @@ var (
 	t                           bool
 	CURRENT_TRANSACTION_VERSION int = 1002
 	createwallet                bool
-	generate                    bool
+	generate                    int
 	bid                         bool
 	mining                      bool
 	setlog                      bool
 	get_balance                 bool
 	cmd                         string
+	waitformining               bool
 )
 
 func init() {
 	flag.BoolVar(&h, "h", false, "this help")
-	flag.IntVar(&rpcport, "p", 9401, "monerod rpc port")
+	flag.IntVar(&rpcport, "p", 0, "monerod rpc port")
 	flag.BoolVar(&t, "t", false, "test")
 	flag.BoolVar(&createwallet, "createwallet", false, "create wallet, other else open the wallet")
 
-	flag.BoolVar(&generate, "generate", false, "generate a block")
+	flag.IntVar(&generate, "generate", 0, "generate a block")
 
 	// to monerod
 	flag.BoolVar(&bid, "bid", false, "bid")
@@ -64,6 +66,7 @@ func init() {
 	flag.BoolVar(&get_balance, "get_balance", false, "get_balance")
 	flag.StringVar(&cmd, "cmd", "", "command without parameters like: get_height, stop_wallet, get_version")
 
+	flag.BoolVar(&waitformining, "waitformining", false, "waiting for popheight to mining.")
 	flag.Usage = usage
 }
 
@@ -122,13 +125,16 @@ func main() {
 	*/
 
 	//
-	//xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
-	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15-no-new-pull/build/release/bin"
-	//xmrd := xmrbuildbin + "/monerod.exe"
-	xmrWalletRPC := xmrbuildbin + "/monero-wallet-rpc.exe"
+	//xmrbuildbin := "/home/user1/pop-blockchain/monero-v0.15-no-new-pull/build/release/bin"
+	xmrbuildbin := "c:/dev/bitcoin-0.18/poporodev/poporo/build/MINGW64_NT-10.0-17763/master/release/bin"
+	//xmrd := xmrbuildbin + "/poporod"
+	xmrWalletRPC := xmrbuildbin + "/poporo-wallet-rpc.exe"
 
 	//18080 P2P_DEFAULT_PORT
 	rpcPort1 := 18081 //note rpc port RPC_DEFAULT_PORT
+	if rpcport != 0 {
+		rpcPort1 = rpcport
+	}
 	walletrpcport1 := 9601
 
 	if setlog {
@@ -148,8 +154,10 @@ func main() {
 		}
 	}
 	if retGetVersion == "" {
-		w1dir := "E:/monero/wallet-rpc"
-		xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir, false)
+		//w1dir := "/home/user1/data/popwallet"
+		w1dir := "C:/magnachain/btc0.18/xmr/xmrwallet"
+		cleardir := false
+		xmrtools.StartWalletRPC(xmrWalletRPC, rpcPort1, walletrpcport1, w1dir, cleardir)
 	}
 
 	fmt.Println("")
@@ -171,9 +179,9 @@ func main() {
 		log.Println(xmrtools.XMRBid(rpcPort1, amount, blockHeightOfBidAddress, vk1))
 	}
 	//注意 XMRGenBlock 不能用在主网上
-	if generate { //gen one block
+	if generate > 0 { //gen one block
 		var xmrBlockCount int64 = 0
-		xmrtools.XMRGenBlock(rpcPort1, 1, waddr1, sec1, &xmrBlockCount)
+		xmrtools.XMRGenBlock(rpcPort1, int64(generate), waddr1, sec1, &xmrBlockCount)
 	}
 	if mining { //loop gen blocks
 		ret := xmrtools.WalletStartMining(walletrpcport1, waddr1, sec1)
@@ -190,6 +198,20 @@ func main() {
 		} else {
 			ret := xmrtools.XMRRpc(walletrpcport1, cmd, ``)
 			log.Println(ret)
+		}
+	}
+	if waitformining {
+		for {
+			h := xmrtools.GetXMRHeight(rpcPort1)
+			if h >= int64(2051693) {
+				log.Println("start mining")
+				ret := xmrtools.WalletStartMining(walletrpcport1, waddr1, sec1)
+				fmt.Println(ret)
+				return
+			} else {
+				log.Println("height ", h, "/2051693")
+				time.Sleep(30 * time.Second)
+			}
 		}
 	}
 	//stop wallet default

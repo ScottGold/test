@@ -1,3 +1,5 @@
+//go run get-require-files.go -tfile=contracts/Module/StorageModule.sol  -rootpath=C:/dev/HK/liquefy-contract/ -copyto=C:/dev/HK/liquefy-contract-StorageModule
+
 package main
 
 import (
@@ -57,7 +59,7 @@ func SearchFile(filename string, waitToSearch []string, allfiles map[string]int)
 		idex := re.FindIndex([]byte(l))
 
 		if len(idex) == 2 {
-			//fmt.Println(l)
+			fmt.Println(l)
 			re2 := regexp.MustCompile(`"`)
 			idex2 := re2.FindAllIndex([]byte(l), -1)
 			//fmt.Println(len(idex2))

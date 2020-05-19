@@ -91,9 +91,9 @@ func main() {
 	btcdatadir := "-datadir=C:/magnachain/btc0.18/btc"
 
 	//xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15/build/MINGW64_NT-10.0-17763/master/release/bin"
-	xmrbuildbin := "C:/dev/bitcoin-0.18/monero-v0.15-no-new-pull/build/release/bin"
-	xmrd := xmrbuildbin + "/monerod.exe"
-	xmrWalletRPC := xmrbuildbin + "/monero-wallet-rpc.exe"
+	xmrbuildbin := "c:/dev/bitcoin-0.18/poporodev/poporo/build/MINGW64_NT-10.0-17763/master/release/bin"
+	xmrd := xmrbuildbin + "/poporod.exe"
+	xmrWalletRPC := xmrbuildbin + "/poporo-wallet-rpc.exe"
 
 	xmrdirroot := "C:/magnachain/btc0.18/xmr/"
 	dir1, dir2 := xmrdirroot+"d1", xmrdirroot+"d2"
